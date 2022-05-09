@@ -1,4 +1,3 @@
-import logging
 import os
 from flask import Flask, make_response, jsonify, request
 from flask_cors import CORS
@@ -10,13 +9,6 @@ from functools import wraps
 from dotenv import load_dotenv
 from utils.utils import get_new_urls
 from flask_apscheduler import APScheduler
-
-logging.basicConfig(filename='photier.txt',
-                    filemode='w',
-                    format='%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s',
-                    datefmt='%d-%m-%Y %H:%M:%S',
-                    level=logging.DEBUG)
-logger = logging.getLogger(name='photier')
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -48,7 +40,6 @@ def before_first_request():
 
 @app.route('/')
 def index():
-    populate_database()
     return {'page': 'index'}
 
 
@@ -61,7 +52,7 @@ def get_all():
         return make_response(jsonify(response)), 200
     except Exception as e:
         response = {'error': str(e)}
-        logging.debug(msg=str(e))
+
         return make_response(response), 404
 
 
@@ -81,7 +72,7 @@ def get_one(photo_id):
             return make_response(jsonify(response)), 404
     except Exception as e:
         response = {'error': str(e)}
-        logging.debug(msg=str(e))
+
         return make_response(response), 404
 
 
@@ -99,7 +90,7 @@ def get_similar():
             return make_response(jsonify(response)), 200
     except Exception as e:
         response = {'error': str(e)}
-        logging.debug(msg=str(e))
+
         return make_response(response), 404
 
 
@@ -117,7 +108,7 @@ def create_one():
             return make_response(jsonify(response)), 200
     except Exception as e:
         response = {'error': str(e)}
-        logging.debug(msg=str(e))
+
         return make_response(response), 404
     return "All photos"
 
@@ -153,11 +144,11 @@ def populate_database():
     images_urls = list(get_new_urls())
     try:
         insert_list(images_urls)
-        logger.info(msg='populating started')
+
     except Exception as e:
-        logging.debug(str(e))
+        print(e)
 
 
 if __name__ == '__main__':
     scheduler.start()
-    app.run(debug=True,port=5000)
+    app.run(debug=True, port=5000)
