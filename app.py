@@ -60,8 +60,7 @@ def get_all():
 @token_required
 def get_one(photo_id):
     try:
-        photo = Photo.get_one_by_id(id=int(photo_id))
-        if photo:
+        if photo := Photo.get_one_by_id(id=int(photo_id)):
             similar = Photo.get_similar_by_id(photo_id)
             response = {'id': photo.id,
                         'url': photo.url,
@@ -81,8 +80,7 @@ def get_one(photo_id):
 def get_similar():
     try:
         req = request.args
-        url = req.get('url', None)
-        if url:
+        if url := req.get('url', None):
             similar = Photo.get_similar_by_url(url=url)
             print(similar)
             response = {'url': url,
@@ -99,8 +97,7 @@ def get_similar():
 def create_one():
     try:
         req = request.args
-        url = req.get('url', None)
-        if url:
+        if url := req.get('url', None):
             p = Photo(url=url)
             p.get_faces()
             p.save_to_db()

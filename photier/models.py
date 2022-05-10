@@ -27,8 +27,7 @@ class Face(Model):
 
     def save_to_db(self):
         all_faces = self.get_all()
-        encodes = [np.array(face.encode) for face in all_faces]
-        if encodes:
+        if encodes := [np.array(face.encode) for face in all_faces]:
             has_id = any(
                 face_recognition.compare_faces(encodes, np.array(self.encode)))
             if has_id:
@@ -146,9 +145,9 @@ class Photo(Model):
     def get_one_by_url(cls, url):
         db = get_db()
         cursor = db.cursor()
-        record = cursor.execute("SELECT * FROM photo WHERE url = (?)",
-                                [url]).fetchone()
-        if record:
+        if record := cursor.execute(
+            "SELECT * FROM photo WHERE url = (?)", [url]
+        ).fetchone():
             return cls(url=record[1], locations=record[2], encodes=record[3])
 
     @classmethod
