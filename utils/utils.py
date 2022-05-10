@@ -19,14 +19,11 @@ def get_new_urls():
         req.raise_for_status()
         (result, _) = req.json().values()
         items = [item.get('media') for item in result]
-        saved_photo_urls = set([photo.url for photo in Photo.get_all()])
+        saved_photo_urls = {photo.url for photo in Photo.get_all()}
         endpoint_urls = []
         for item in items:
-            for image_obj in item:
-                endpoint_urls.append(image_obj['url'])
-        new_urls = set(endpoint_urls).difference(saved_photo_urls)
-
-        return new_urls
+            endpoint_urls.extend(image_obj['url'] for image_obj in item)
+        return set(endpoint_urls).difference(saved_photo_urls)
     except Exception as e:
         return str(e)
 

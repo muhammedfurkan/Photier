@@ -25,10 +25,9 @@ def token_required(func):
         token = req.get('token', None)
         if token == TOKEN:
             return func(*args, **kwargs)
-        else:
-            response = {
-                'unauthenticated': 'check token please before continue!'}
-            return make_response(make_response(response))
+        response = {
+            'unauthenticated': 'check token please before continue!'}
+        return make_response(make_response(response))
 
     return decorated_fun
 
@@ -60,8 +59,7 @@ def get_all():
 @token_required
 def get_one(photo_id):
     try:
-        photo = Photo.get_one_by_id(id=int(photo_id))
-        if photo:
+        if photo := Photo.get_one_by_id(id=int(photo_id)):
             similar = Photo.get_similar_by_id(photo_id)
             response = {'id': photo.id,
                         'url': photo.url,
@@ -81,8 +79,7 @@ def get_one(photo_id):
 def get_similar():
     try:
         req = request.args
-        url = req.get('url', None)
-        if url:
+        if url := req.get('url', None):
             similar = Photo.get_similar_by_url(url=url)
             print(similar)
             response = {'url': url,
@@ -99,8 +96,7 @@ def get_similar():
 def create_one():
     try:
         req = request.args
-        url = req.get('url', None)
-        if url:
+        if url := req.get('url', None):
             p = Photo(url=url)
             p.get_faces()
             p.save_to_db()
@@ -129,7 +125,7 @@ def insert_list(images_list):
             p.save_to_db()
             count += 1
         except Exception as e:
-            print(str(e))
+            print(e)
         finally:
             continue
     return count

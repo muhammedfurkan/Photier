@@ -25,36 +25,39 @@ class Face(Model):
 
     def save_to_db(self):
         all_faces = self.get_all()
-        encodes = [np.array(face.encode) for face in all_faces]
-        if encodes:
+        if encodes := [np.array(face.encode) for face in all_faces]:
             has_id = any(
                 face_recognition.compare_faces(encodes, np.array(self.encode)))
-            if has_id is True:
-                print(f'[!] this face has id in database.')
+            if has_id:
+                print('[!] this face has id in database.')
                 return
             else:
-                print(f'[+] saving new face id to database.')
+                print('[+] saving new face id to database.')
                 db = get_db()
                 cursor = db.cursor()
                 cursor.execute(
-                    f"""INSERT INTO face (location,encode) VALUES (?,?)""",
-                    [str(self.location), str(self.encode)])
+                    """INSERT INTO face (location,encode) VALUES (?,?)""",
+                    [str(self.location), str(self.encode)],
+                )
+
 
                 db.commit()
         else:
-            print(f'[+] saving new face id to database.')
+            print('[+] saving new face id to database.')
             db = get_db()
             cursor = db.cursor()
             cursor.execute(
-                f"""INSERT INTO face (location,encode) VALUES (?,?)""",
-                [str(self.location), str(self.encode)])
+                """INSERT INTO face (location,encode) VALUES (?,?)""",
+                [str(self.location), str(self.encode)],
+            )
+
             db.commit()
 
     @classmethod
     def get_all(cls):
         db = get_db()
         cursor = db.cursor()
-        records = cursor.execute(f"SELECT * FROM face;").fetchall()
+        records = cursor.execute("SELECT * FROM face;").fetchall()
         return [
             cls(location=eval(record[1]), encode=eval(record[2]))
             for record in records
@@ -99,18 +102,17 @@ class Photo(Model):
     def get_faces(self):
         extention = os.path.splitext(urlparse(self.url).path)[1]
         print(extention)
-        if extention in ['.jpg', '.png', '.jpeg']:
-            req = request.Request(url=self.url, headers=HEADERS)
-            img = request.urlopen(url=req)
-            self.img_fc = face_recognition.load_image_file(img)
-            self.locations = [
-                list(i) for i in face_recognition.face_locations(self.img_fc)
-            ]
-            self.encodes = [
-                list(i) for i in face_recognition.face_encodings(self.img_fc)
-            ]
-        else:
+        if extention not in ['.jpg', '.png', '.jpeg']:
             raise Exception('[!] image url must extention be in (jpg,png,jpeg).')
+        req = request.Request(url=self.url, headers=HEADERS)
+        img = request.urlopen(url=req)
+        self.img_fc = face_recognition.load_image_file(img)
+        self.locations = [
+            list(i) for i in face_recognition.face_locations(self.img_fc)
+        ]
+        self.encodes = [
+            list(i) for i in face_recognition.face_encodings(self.img_fc)
+        ]
 
     def save_to_db(self):
         if Photo.get_one_by_url(self.url):
@@ -120,11 +122,14 @@ class Photo(Model):
         # get photo faces
         for face in self.faces:
             face.save_to_db()
-        print(f'[+] saving photo to database.')
+        print('[+] saving photo to database.')
         db = get_db()
         cursor = db.cursor()
-        cursor.execute(f"""INSERT INTO photo (url,locations,encodes) VALUES (?,?,?)""",
-                       [self.url, str(self.locations), str(self.encodes)])
+        cursor.execute(
+            """INSERT INTO photo (url,locations,encodes) VALUES (?,?,?)""",
+            [self.url, str(self.locations), str(self.encodes)],
+        )
+
         db.commit()
 
     def is_similar(self, other: "Photo"):
@@ -136,7 +141,7 @@ class Photo(Model):
                 result = any(face_recognition.compare_faces(encode, self_encode))
                 data.append(result)
             except Exception as e:
-                print(str(e))
+                print(e)
             finally:
                 continue
         return any(data)
@@ -145,9 +150,9 @@ class Photo(Model):
     def get_one_by_url(cls, url):
         db = get_db()
         cursor = db.cursor()
-        record = cursor.execute("SELECT * FROM photo WHERE url = (?)",
-                                [url]).fetchone()
-        if record:
+        if record := cursor.execute(
+            "SELECT * FROM photo WHERE url = (?)", [url]
+        ).fetchone():
             return cls(url=record[1], locations=record[2], encodes=record[3])
 
     @classmethod
@@ -169,11 +174,7 @@ class Photo(Model):
     @classmethod
     def get_similar_by_id(cls, id):
         p1 = cls.get_one_by_id(id=id)
-        similar = []
-        for p in Photo.get_all():
-            if p.is_similar(p1):
-                similar.append(p)
-        return similar
+        return [p for p in Photo.get_all() if p.is_similar(p1)]
 
     @classmethod
     def get_similar_by_url(cls, url):
@@ -184,7 +185,7 @@ class Photo(Model):
             encodes_list = [np.array(encode) for encode in p.encodes]
             result = any(face_recognition.compare_faces(
                 encodes_list, np.array(p1.encodes)))
-            if result is True:
+            if result:
                 similar.append(p)
 
         return similar
