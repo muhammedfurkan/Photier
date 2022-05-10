@@ -1,14 +1,15 @@
 import os
-from flask import Flask, make_response, jsonify, request
+from functools import wraps
+
+from dotenv import load_dotenv
+from flask import Flask, jsonify, make_response, request
+from flask_apscheduler import APScheduler
 from flask_cors import CORS
 
 from config import Config
 from database import create_db
 from photier.models import Photo
-from functools import wraps
-from dotenv import load_dotenv
 from utils.utils import get_new_urls
-from flask_apscheduler import APScheduler
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -25,10 +26,9 @@ def token_required(func):
         token = req.get('token', None)
         if token == TOKEN:
             return func(*args, **kwargs)
-        else:
-            response = {
-                'unauthenticated': 'check token please before continue!'}
-            return make_response(make_response(response))
+        response = {
+            'unauthenticated': 'check token please before continue!'}
+        return make_response(make_response(response))
 
     return decorated_fun
 
@@ -129,7 +129,7 @@ def insert_list(images_list):
             p.save_to_db()
             count += 1
         except Exception as e:
-            print(str(e))
+            print(e)
         finally:
             continue
     return count

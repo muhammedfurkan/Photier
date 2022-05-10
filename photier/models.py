@@ -1,9 +1,11 @@
+import os
 from abc import ABCMeta
 from urllib import request
 from urllib.parse import urlparse
-import os
+
 import face_recognition
 import numpy as np
+
 from database import get_db
 from utils.headers import HEADERS
 
@@ -29,32 +31,29 @@ class Face(Model):
         if encodes:
             has_id = any(
                 face_recognition.compare_faces(encodes, np.array(self.encode)))
-            if has_id is True:
-                print(f'[!] this face has id in database.')
+            if has_id:
+                print('[!] this face has id in database.')
                 return
             else:
-                print(f'[+] saving new face id to database.')
-                db = get_db()
-                cursor = db.cursor()
-                cursor.execute(
-                    f"""INSERT INTO face (location,encode) VALUES (?,?)""",
-                    [str(self.location), str(self.encode)])
-
-                db.commit()
+                self._extracted_from_save_to_db_11()
         else:
-            print(f'[+] saving new face id to database.')
-            db = get_db()
-            cursor = db.cursor()
-            cursor.execute(
-                f"""INSERT INTO face (location,encode) VALUES (?,?)""",
-                [str(self.location), str(self.encode)])
-            db.commit()
+            self._extracted_from_save_to_db_11()
+
+    # TODO Rename this here and in `save_to_db`
+    def _extracted_from_save_to_db_11(self):
+        print('[+] saving new face id to database.')
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("""INSERT INTO face (location,encode) VALUES (?,?)""", [
+                       str(self.location), str(self.encode)])
+
+        db.commit()
 
     @classmethod
     def get_all(cls):
         db = get_db()
         cursor = db.cursor()
-        records = cursor.execute(f"SELECT * FROM face;").fetchall()
+        records = cursor.execute("SELECT * FROM face;").fetchall()
         return [
             cls(location=eval(record[1]), encode=eval(record[2]))
             for record in records
@@ -96,21 +95,21 @@ class Photo(Model):
             'faces_count': self.faces_count
         }
 
-    def get_faces(self):
+    def get_faces(self):  # sourcery skip: raise-specific-error
         extention = os.path.splitext(urlparse(self.url).path)[1]
         print(extention)
-        if extention in ['.jpg', '.png', '.jpeg']:
-            req = request.Request(url=self.url, headers=HEADERS)
-            img = request.urlopen(url=req)
-            self.img_fc = face_recognition.load_image_file(img)
-            self.locations = [
-                list(i) for i in face_recognition.face_locations(self.img_fc)
-            ]
-            self.encodes = [
-                list(i) for i in face_recognition.face_encodings(self.img_fc)
-            ]
-        else:
-            raise Exception('[!] image url must extention be in (jpg,png,jpeg).')
+        if extention not in ['.jpg', '.png', '.jpeg']:
+            raise Exception(
+                '[!] image url must extention be in (jpg,png,jpeg).')
+        req = request.Request(url=self.url, headers=HEADERS)
+        img = request.urlopen(url=req)
+        self.img_fc = face_recognition.load_image_file(img)
+        self.locations = [
+            list(i) for i in face_recognition.face_locations(self.img_fc)
+        ]
+        self.encodes = [
+            list(i) for i in face_recognition.face_encodings(self.img_fc)
+        ]
 
     def save_to_db(self):
         if Photo.get_one_by_url(self.url):
@@ -120,11 +119,12 @@ class Photo(Model):
         # get photo faces
         for face in self.faces:
             face.save_to_db()
-        print(f'[+] saving photo to database.')
+        print('[+] saving photo to database.')
         db = get_db()
         cursor = db.cursor()
-        cursor.execute(f"""INSERT INTO photo (url,locations,encodes) VALUES (?,?,?)""",
-                       [self.url, str(self.locations), str(self.encodes)])
+        cursor.execute("""INSERT INTO photo (url,locations,encodes) VALUES (?,?,?)""", [
+                       self.url, str(self.locations), str(self.encodes)])
+
         db.commit()
 
     def is_similar(self, other: "Photo"):
@@ -133,10 +133,11 @@ class Photo(Model):
         data = []
         for encode in encodes_list:
             try:
-                result = any(face_recognition.compare_faces(encode, self_encode))
+                result = any(face_recognition.compare_faces(
+                    encode, self_encode))
                 data.append(result)
             except Exception as e:
-                print(str(e))
+                print(e)
             finally:
                 continue
         return any(data)
@@ -169,11 +170,7 @@ class Photo(Model):
     @classmethod
     def get_similar_by_id(cls, id):
         p1 = cls.get_one_by_id(id=id)
-        similar = []
-        for p in Photo.get_all():
-            if p.is_similar(p1):
-                similar.append(p)
-        return similar
+        return [p for p in Photo.get_all() if p.is_similar(p1)]
 
     @classmethod
     def get_similar_by_url(cls, url):
@@ -184,7 +181,7 @@ class Photo(Model):
             encodes_list = [np.array(encode) for encode in p.encodes]
             result = any(face_recognition.compare_faces(
                 encodes_list, np.array(p1.encodes)))
-            if result is True:
+            if result:
                 similar.append(p)
 
         return similar
