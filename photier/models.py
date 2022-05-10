@@ -1,9 +1,11 @@
+import os
 from abc import ABCMeta
 from urllib import request
 from urllib.parse import urlparse
-import os
+
 import face_recognition
 import numpy as np
+
 from database import get_db
 from utils.headers import HEADERS
 
@@ -32,26 +34,19 @@ class Face(Model):
                 print('[!] this face has id in database.')
                 return
             else:
-                print('[+] saving new face id to database.')
-                db = get_db()
-                cursor = db.cursor()
-                cursor.execute(
-                    """INSERT INTO face (location,encode) VALUES (?,?)""",
-                    [str(self.location), str(self.encode)],
-                )
-
-
-                db.commit()
+                self._extracted_from_save_to_db_11()
         else:
-            print('[+] saving new face id to database.')
-            db = get_db()
-            cursor = db.cursor()
-            cursor.execute(
-                """INSERT INTO face (location,encode) VALUES (?,?)""",
-                [str(self.location), str(self.encode)],
-            )
+            self._extracted_from_save_to_db_11()
 
-            db.commit()
+    # TODO Rename this here and in `save_to_db`
+    def _extracted_from_save_to_db_11(self):
+        print('[+] saving new face id to database.')
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("""INSERT INTO face (location,encode) VALUES (?,?)""", [
+                       str(self.location), str(self.encode)])
+
+        db.commit()
 
     @classmethod
     def get_all(cls):
@@ -99,11 +94,12 @@ class Photo(Model):
             'faces_count': self.faces_count
         }
 
-    def get_faces(self):
+    def get_faces(self):  # sourcery skip: raise-specific-error
         extention = os.path.splitext(urlparse(self.url).path)[1]
         print(extention)
         if extention not in ['.jpg', '.png', '.jpeg']:
-            raise Exception('[!] image url must extention be in (jpg,png,jpeg).')
+            raise Exception(
+                '[!] image url must extention be in (jpg,png,jpeg).')
         req = request.Request(url=self.url, headers=HEADERS)
         img = request.urlopen(url=req)
         self.img_fc = face_recognition.load_image_file(img)
@@ -125,10 +121,8 @@ class Photo(Model):
         print('[+] saving photo to database.')
         db = get_db()
         cursor = db.cursor()
-        cursor.execute(
-            """INSERT INTO photo (url,locations,encodes) VALUES (?,?,?)""",
-            [self.url, str(self.locations), str(self.encodes)],
-        )
+        cursor.execute("""INSERT INTO photo (url,locations,encodes) VALUES (?,?,?)""", [
+                       self.url, str(self.locations), str(self.encodes)])
 
         db.commit()
 
@@ -138,7 +132,8 @@ class Photo(Model):
         data = []
         for encode in encodes_list:
             try:
-                result = any(face_recognition.compare_faces(encode, self_encode))
+                result = any(face_recognition.compare_faces(
+                    encode, self_encode))
                 data.append(result)
             except Exception as e:
                 print(e)

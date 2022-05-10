@@ -1,14 +1,15 @@
 import os
-from flask import Flask, make_response, jsonify, request
+from functools import wraps
+
+from dotenv import load_dotenv
+from flask import Flask, jsonify, make_response, request
+from flask_apscheduler import APScheduler
 from flask_cors import CORS
 
 from config import Config
 from database import create_db
 from photier.models import Photo
-from functools import wraps
-from dotenv import load_dotenv
 from utils.utils import get_new_urls
-from flask_apscheduler import APScheduler
 
 app = Flask(__name__)
 app.config.from_object(Config)

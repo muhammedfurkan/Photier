@@ -3,7 +3,6 @@ import sqlite3
 from config import Config
 
 
-
 def create_db():
     """
     create database
@@ -23,5 +22,3 @@ def get_db():
     connection = sqlite3.connect(Config.DATABASE)
     connection.row_factory = sqlite3.Row
     return connection
-
-

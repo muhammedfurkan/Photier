@@ -1,8 +1,11 @@
 import os
+
 import requests
 from dotenv import load_dotenv
+
 from config import Config
 from photier.models import Photo
+
 from .headers import HEADERS
 
 load_dotenv(dotenv_path=Config.ENV)
@@ -15,7 +18,8 @@ def get_new_urls():
     """
     HEADERS.update({'authorization': os.environ.get("API_TOKEN")})
     try:
-        req = requests.get('https://teklas-api.iciletisim.app/api/posts/all-images', headers=HEADERS)
+        req = requests.get(
+            'https://teklas-api.iciletisim.app/api/posts/all-images', headers=HEADERS)
         req.raise_for_status()
         (result, _) = req.json().values()
         items = [item.get('media') for item in result]
@@ -26,5 +30,3 @@ def get_new_urls():
         return set(endpoint_urls).difference(saved_photo_urls)
     except Exception as e:
         return str(e)
-
-
